@@ -99,8 +99,6 @@ This API demo demonstrates enterprise-grade security practices:
 - Protection against common web vulnerabilities
 - Secure configuration management
 
-For a detailed security overview, see [Security Implementation](docs/security-implementation.md).
-
 ## Testing
 
 The application includes:
