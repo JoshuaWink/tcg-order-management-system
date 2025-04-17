@@ -1,0 +1,81 @@
+version: '3.8'
+
+services:
+  # API Service (includes all functionality)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5000:80"
+      - "5001:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - AUTH_DB_CONNECTION=Server=sqlserver;Database=TCGAuthDb;User Id=${DB_USER};Password=${DB_PASSWORD};
+      - ORDERS_DB_CONNECTION=Server=sqlserver;Database=TCGOrdersDb;User Id=${DB_USER};Password=${DB_PASSWORD};
+      - INVENTORY_DB_CONNECTION=Server=sqlserver;Database=TCGInventoryDb;User Id=${DB_USER};Password=${DB_PASSWORD};
+      - MONGODB_CONNECTION=mongodb://mongo:27017
+      - MONGODB_DATABASE=TCGInventoryDB
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ISSUER=https://api.tcgordermanagement.com
+      - JWT_AUDIENCE=https://tcgordermanagement.com
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_USERNAME=${RABBITMQ_USER}
+      - RABBITMQ_PASSWORD=${RABBITMQ_PASSWORD}
+    depends_on:
+      - sqlserver
+      - mongo
+      - rabbitmq
+    restart: always
+    networks:
+      - tcg-network
+
+  # SQL Server Database
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=${DB_PASSWORD}
+      - MSSQL_PID=Express
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqlserver-data:/var/opt/mssql
+    restart: always
+    networks:
+      - tcg-network
+
+  # MongoDB Database
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    restart: always
+    networks:
+      - tcg-network
+
+  # RabbitMQ for Event Bus
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"  # AMQP port
+      - "15672:15672"  # Management UI
+    environment:
+      - RABBITMQ_DEFAULT_USER=${RABBITMQ_USER}
+      - RABBITMQ_DEFAULT_PASS=${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    restart: always
+    networks:
+      - tcg-network
+
+volumes:
+  sqlserver-data:
+  mongodb-data:
+  rabbitmq-data:
+
+networks:
+  tcg-network:
+    driver: bridge 
